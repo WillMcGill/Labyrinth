@@ -197,6 +197,26 @@ function makeStoneTexture() {
   return tex;
 }
 
+function makePlaygroundBackground() {
+  // Vertical gradient canvas — pale sky fading through a hazy horizon into
+  // soft grass green. Used as scene.background so the maze appears to sit
+  // on a grassy field under an open sky.
+  const c = document.createElement('canvas');
+  c.width = 4;
+  c.height = 512;
+  const ctx = c.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 512);
+  grad.addColorStop(0.00, '#a4d4f6'); // sky overhead
+  grad.addColorStop(0.45, '#cfe7f0'); // hazy horizon
+  grad.addColorStop(0.55, '#bcd0a4'); // first hint of green
+  grad.addColorStop(1.00, '#7ea561'); // grass underfoot
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 4, 512);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 async function main() {
   await RAPIER.init();
 
@@ -212,8 +232,10 @@ async function main() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0d12);
-  scene.fog = new THREE.Fog(0x0b0d12, 22, 42);
+  scene.background = makePlaygroundBackground();
+  // Fog colour matches the horizon hue so anything at fog distance blends
+  // into the background instead of fading to a contrasting tone.
+  scene.fog = new THREE.Fog(0xcfe7f0, 22, 42);
 
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
   // Direction the camera looks at the origin from; distance is sized by aspect.

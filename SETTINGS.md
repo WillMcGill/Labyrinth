@@ -72,8 +72,8 @@ When tuning, change one value at a time and reload. Several of these knobs inter
 | Shadow map size | `2048 × 2048` | Sharp shadow edges. Doubling this is the easiest way to crisp them up further; halving is the easiest perf win if shadow rendering shows up in a profile. |
 | Shadow camera bounds | `±10` on left/right/top/bottom | Frustum within which shadows are computed. If you ever enlarge the level, increase this or the perimeter loses shadows. |
 | Shadow camera near/far | `1` / `40` | Range along the light's view direction in which shadow-casters are tracked. |
-| Scene `background` | `0x0b0d12` | Dark navy. What you see outside the maze. |
-| Scene `fog` | `Fog(0x0b0d12, near=dist*0.7, far=dist*1.6)` | Matches background colour, recomputed per resize relative to camera distance so the maze never disappears into fog at any aspect ratio. |
+| Scene `background` | `makePlaygroundBackground()` — 4×512 canvas vertical gradient: `#a4d4f6` sky → `#cfe7f0` horizon → `#bcd0a4` near grass → `#7ea561` grass underfoot | Procedural "playground" sky-to-grass. Used as a 2D texture background; same texture is what the ball's cube camera picks up for sky/ground reflections. Swap the gradient stops to retheme. |
+| Scene `fog` | `Fog(0xcfe7f0, near=dist*0.7, far=dist*1.6)` | Hazy-horizon colour so anything at fog distance blends into the background gradient. `near`/`far` recomputed per resize from camera distance so the maze never disappears into fog at any aspect ratio. |
 | Scene `environment` | procedural `RoomEnvironment` via `PMREMGenerator(renderer).fromScene(env, 0.04)` | Studio-like image-based lighting. Drives reflections on the metallic ball **and** adds ambient-flavored diffuse to every PBR material — that's why the whole maze got brighter when this was introduced. To revert just the side effect, assign `material.envMap` on the ball only and remove `scene.environment`. |
 
 ---
