@@ -81,3 +81,66 @@ html, body {
 
 #banner.win { color: #6ee7b7; }
 #banner.lose { color: #fca5a5; }
+
+#motion-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 20px;
+}
+
+#motion-overlay[hidden] { display: none; }
+
+.motion-card {
+  background: #1d222d;
+  border: 1px solid #2c3342;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 360px;
+  text-align: center;
+}
+
+.motion-card h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+.motion-card p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: #b8bfd0;
+}
+
+.motion-card button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 0;
+  font: inherit;
+  font-size: 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.motion-card button:active { background: #1d4ed8; }
+
+.motion-card button.ghost {
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid #2c3342;
+}
+
+#motion-error {
+  margin-top: 12px;
+  margin-bottom: 0;
+  color: #fca5a5;
+  font-size: 13px;
+  min-height: 1em;
+}

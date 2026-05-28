@@ -165,15 +165,60 @@ async function main() {
   const statusEl = document.getElementById('status');
   const resetBtn = document.getElementById('reset');
 
-  modeSelect.addEventListener('change', async () => {
-    const ok = await input.setMode(modeSelect.value);
-    if (!ok) {
-      statusEl.textContent = 'Device tilt unavailable · falling back to mouse';
-      modeSelect.value = 'mouse';
-      input.setMode('mouse');
-    } else {
-      statusEl.textContent = hintFor(modeSelect.value);
+  const motionOverlay = document.getElementById('motion-overlay');
+  const motionEnableBtn = document.getElementById('motion-enable');
+  const motionCancelBtn = document.getElementById('motion-cancel');
+  const motionErrorEl = document.getElementById('motion-error');
+
+  function tryEnableTilt() {
+    motionErrorEl.textContent = '';
+    // requestPermission() must be called directly inside the click handler
+    // for iOS to count the activation. No awaits before this call.
+    input.requestGyroPermission().then((result) => {
+      motionOverlay.hidden = true;
+      if (!result.ok) {
+        statusEl.textContent = result.reason + ' · falling back to mouse';
+        modeSelect.value = 'mouse';
+        input.setMode('mouse');
+        return;
+      }
+      input.setMode('tilt');
+      statusEl.textContent = hintFor('tilt');
+    });
+  }
+
+  motionEnableBtn.addEventListener('click', tryEnableTilt);
+  motionCancelBtn.addEventListener('click', () => {
+    motionOverlay.hidden = true;
+    modeSelect.value = 'mouse';
+    input.setMode('mouse');
+    statusEl.textContent = hintFor('mouse');
+  });
+
+  modeSelect.addEventListener('change', () => {
+    const mode = modeSelect.value;
+    if (mode === 'tilt' && input.needsIosPermission()) {
+      // iOS path: show overlay so the user taps a button (real activation).
+      motionErrorEl.textContent = '';
+      motionOverlay.hidden = false;
+      return;
     }
+    if (mode === 'tilt') {
+      // Non-iOS path: bind directly, no prompt needed.
+      input.requestGyroPermission().then((result) => {
+        if (!result.ok) {
+          statusEl.textContent = result.reason + ' · falling back to mouse';
+          modeSelect.value = 'mouse';
+          input.setMode('mouse');
+        } else {
+          input.setMode('tilt');
+          statusEl.textContent = hintFor('tilt');
+        }
+      });
+      return;
+    }
+    input.setMode(mode);
+    statusEl.textContent = hintFor(mode);
   });
 
   function hintFor(mode) {
