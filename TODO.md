@@ -8,6 +8,7 @@ Ideas and improvements for Labyrinth. Keep entries short — link to a PR or iss
 - [ ] Procedural maze generator (recursive backtracker)
 - [ ] Tiny level editor (drag-paint walls/holes/start/goal)
 - [ ] More holes scattered through the current level (right now there's only one)
+- [ ] Debug Reset after ball falls off the board. `resetBall()` currently teleports the ball, zeros velocity and angular velocity, and clears game state — but does *not* reset ball rotation (so the mesh keeps its last tumbled orientation), does *not* re-level the board (smoothed tilt input carries over, so the ball can start rolling immediately), and does *not* reset the input smoothing values. Verify which of these actually matter in practice and bring Reset back to true initial state
 - [ ] Tilt-bonus or speedrun scoring
 - [ ] Tune ball physics — mass, friction, restitution, damping, and tilt sensitivity feel off (ball rolls too freely / hits walls too hard / etc., specifics TBD when we revisit)
 
