@@ -19,6 +19,7 @@ Ideas and improvements for Labyrinth. Keep entries short — link to a PR or iss
 - [ ] Ball should stay frozen during the entire orientation-change → recalibration transition. Partial pause exists via `pauseForCalibration()` but ball still appears to drift in practice — investigate whether existing momentum/the brief window before pause is the cause, and harden the pause boundary
 - [ ] Default to tilt mode when the app opens on a mobile device instead of mouse. Detect touch-only / mobile and pre-select tilt. iOS still needs the existing "Enable motion controls" confirmation modal — show it proactively on first load rather than waiting for the user to discover the dropdown
 - [ ] Hide the "Keyboard (WASD / Arrows)" input option on touch-only devices — irrelevant without a physical keyboard
+- [ ] Android tilt support — `controls.js` already takes a no-permission path for non-iOS (`bindGyro()` straight from `requestGyroPermission()`), but it's untested on real Android. Verify on Chrome Android: events firing, screen.orientation.angle convention matches iOS (the negated-angle fix), no Permissions-Policy header needed, and that the calibration baseline works in practice. May need a user-gesture-gated bind on newer Chrome (89+)
 
 ## Visual / polish
 - [ ] Win/lose banner sizing on small screens (currently sized for desktop)
