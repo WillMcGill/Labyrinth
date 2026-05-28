@@ -9,8 +9,8 @@ export function createInput() {
     target: { x: 0, z: 0 },
     keys: new Set(),
     gyroBound: false,
-    calibBeta: null,
-    calibGamma: null,
+    calibSx: null,
+    calibSy: null,
     calibrating: false,
     calibBuffer: [],
     calibResolve: null,
@@ -32,37 +32,51 @@ export function createInput() {
     state.keys.delete(e.key.toLowerCase());
   };
 
+  // Project the device's raw (beta, gamma) onto the user's current screen
+  // frame so that "right on screen" always rolls the ball right, regardless
+  // of whether the phone is held in portrait, landscape, or upside-down.
+  function deviceToScreen(beta, gamma) {
+    const a = (screen?.orientation?.angle ?? window.orientation ?? 0) * Math.PI / 180;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    return {
+      sx: gamma * cos - beta * sin,
+      sy: gamma * sin + beta * cos,
+    };
+  }
+
   const onOrient = (e) => {
     if (state.mode !== 'tilt') return;
-    const beta = e.beta ?? 0;   // front/back (-180..180)
-    const gamma = e.gamma ?? 0; // left/right (-90..90)
+    const beta = e.beta ?? 0;   // front/back (-180..180), device frame
+    const gamma = e.gamma ?? 0; // left/right (-90..90), device frame
+    const { sx, sy } = deviceToScreen(beta, gamma);
 
     if (state.calibrating) {
-      state.calibBuffer.push({ beta, gamma });
+      state.calibBuffer.push({ sx, sy });
       if (state.calibBuffer.length >= CALIB_SAMPLES) {
         finishCalibration();
       }
       return;
     }
 
-    if (state.calibBeta === null) return; // not calibrated yet, hold neutral
+    if (state.calibSx === null) return; // not calibrated yet, hold neutral
 
-    state.target.x = clamp((gamma - state.calibGamma) / 25, -1, 1);
-    state.target.z = clamp((beta - state.calibBeta) / 25, -1, 1);
+    state.target.x = clamp((sx - state.calibSx) / 25, -1, 1);
+    state.target.z = clamp((sy - state.calibSy) / 25, -1, 1);
   };
 
   function finishCalibration() {
     const n = state.calibBuffer.length;
     if (n > 0) {
-      let sumB = 0, sumG = 0;
-      for (const s of state.calibBuffer) { sumB += s.beta; sumG += s.gamma; }
-      state.calibBeta = sumB / n;
-      state.calibGamma = sumG / n;
+      let sumX = 0, sumY = 0;
+      for (const s of state.calibBuffer) { sumX += s.sx; sumY += s.sy; }
+      state.calibSx = sumX / n;
+      state.calibSy = sumY / n;
     } else {
       // Safety net: sensor never delivered. Use neutral baseline so the
       // game doesn't freeze waiting for samples that won't arrive.
-      state.calibBeta = 0;
-      state.calibGamma = 0;
+      state.calibSx = 0;
+      state.calibSy = 0;
     }
     state.calibrating = false;
     state.calibBuffer = [];
@@ -84,8 +98,8 @@ export function createInput() {
     }
     state.calibrating = true;
     state.calibBuffer = [];
-    state.calibBeta = null;
-    state.calibGamma = null;
+    state.calibSx = null;
+    state.calibSy = null;
     return new Promise((resolve) => {
       state.calibResolve = resolve;
       state.calibTimeout = setTimeout(finishCalibration, CALIB_TIMEOUT_MS);
@@ -137,8 +151,8 @@ export function createInput() {
     state.target.z = 0;
     // Switching modes invalidates the tilt baseline; tilt mode must re-call
     // calibrate() before emitting movement.
-    state.calibBeta = null;
-    state.calibGamma = null;
+    state.calibSx = null;
+    state.calibSy = null;
     state.calibrating = false;
     state.calibBuffer = [];
     if (state.calibTimeout) {

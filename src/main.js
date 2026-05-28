@@ -219,6 +219,19 @@ async function main() {
   });
   recenterBtn.addEventListener('click', calibrateAndPlay);
 
+  // Rotating the device invalidates the tilt baseline because the same
+  // physical hold produces different beta/gamma when projected onto the new
+  // screen frame. Re-run calibration automatically while in tilt mode.
+  function onOrientationChange() {
+    if (modeSelect.value === 'tilt' && !recenterBtn.hidden) {
+      calibrateAndPlay();
+    }
+  }
+  window.addEventListener('orientationchange', onOrientationChange);
+  if (screen && screen.orientation && typeof screen.orientation.addEventListener === 'function') {
+    screen.orientation.addEventListener('change', onOrientationChange);
+  }
+
   modeSelect.addEventListener('change', () => {
     const mode = modeSelect.value;
     if (mode === 'tilt' && input.needsIosPermission()) {
