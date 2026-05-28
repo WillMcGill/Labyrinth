@@ -93,6 +93,8 @@ html, body {
   padding: 20px;
 }
 
+#motion-overlay[hidden] { display: none; }
+
 .motion-card {
   background: #1d222d;
   border: 1px solid #2c3342;
