@@ -308,8 +308,6 @@ async function main() {
 
   const matBall = new THREE.MeshStandardMaterial({
     color: 0xd6d8dc,
-    emissive: 0xe6efff,           // subtle cool-white self-glow so the ball
-    emissiveIntensity: 0.18,      // is locatable on the dark stone walls
     roughness: 0.12,
     metalness: 1.0,
     envMap: cubeRenderTarget.texture,
@@ -489,6 +487,8 @@ async function main() {
   const input = createInput();
   const modeSelect = document.getElementById('input-mode');
   const banner = document.getElementById('banner');
+  const bannerText = document.getElementById('banner-text');
+  const bannerReset = document.getElementById('banner-reset');
   const statusEl = document.getElementById('status');
   const resetBtn = document.getElementById('reset');
 
@@ -654,6 +654,7 @@ async function main() {
     statusEl.textContent = hintFor(modeSelect.value);
   }
   resetBtn.addEventListener('click', resetBall);
+  bannerReset.addEventListener('click', resetBall);
 
   // --- Resize ---------------------------------------------------------------
   function resize() {
@@ -725,7 +726,7 @@ async function main() {
     if (gameState === 'playing') {
       if (t.y < FALL_THRESHOLD) {
         gameState = 'lose';
-        banner.textContent = 'You fell!';
+        bannerText.textContent = 'You fell!';
         banner.className = 'lose';
         banner.hidden = false;
         statusEl.textContent = 'Press Reset to try again';
@@ -733,7 +734,7 @@ async function main() {
         world.intersectionPairsWith(goalCollider, (other) => {
           if (other === ballCollider) {
             gameState = 'win';
-            banner.textContent = 'You win!';
+            bannerText.textContent = 'You win!';
             banner.className = 'win';
             banner.hidden = false;
             statusEl.textContent = 'Press Reset to play again';

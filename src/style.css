@@ -90,18 +90,41 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 36px;
-  font-weight: 700;
   padding: 18px 28px;
   border-radius: 12px;
   background: rgba(20, 24, 33, 0.85);
   border: 1px solid #2c3342;
   backdrop-filter: blur(10px);
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: stretch;
+  min-width: 220px;
 }
 
-#banner.win { color: #6ee7b7; }
-#banner.lose { color: #fca5a5; }
+#banner[hidden] { display: none; }
+
+#banner-text {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+#banner.win #banner-text { color: #6ee7b7; }
+#banner.lose #banner-text { color: #fca5a5; }
+
+#banner-reset {
+  font: inherit;
+  font-size: 16px;
+  padding: 10px 18px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#banner-reset:active { background: #1d4ed8; }
 
 #motion-overlay,
 #start-overlay {
