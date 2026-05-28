@@ -41,33 +41,47 @@ export function createInput() {
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
 
-  async function enableGyro() {
-    if (state.gyroBound) return true;
-    if (typeof DeviceOrientationEvent === 'undefined') return false;
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-      try {
-        const result = await DeviceOrientationEvent.requestPermission();
-        if (result !== 'granted') return false;
-      } catch {
-        return false;
-      }
-    }
-    window.addEventListener('deviceorientation', onOrient);
-    state.gyroBound = true;
-    return true;
+  function needsIosPermission() {
+    return typeof DeviceOrientationEvent !== 'undefined'
+      && typeof DeviceOrientationEvent.requestPermission === 'function';
   }
 
-  async function setMode(mode) {
+  // Must be called synchronously from a user-gesture handler on iOS Safari,
+  // otherwise the permission prompt is suppressed and requestPermission()
+  // resolves to 'denied' without ever showing.
+  function requestGyroPermission() {
+    if (typeof DeviceOrientationEvent === 'undefined') {
+      return Promise.resolve({ ok: false, reason: 'DeviceOrientationEvent not supported on this browser' });
+    }
+    if (!needsIosPermission()) {
+      // Android / desktop — no prompt, just attach.
+      bindGyro();
+      return Promise.resolve({ ok: true });
+    }
+    return DeviceOrientationEvent.requestPermission().then(
+      (result) => {
+        if (result !== 'granted') {
+          return { ok: false, reason: `iOS motion permission ${result}` };
+        }
+        bindGyro();
+        return { ok: true };
+      },
+      (err) => ({ ok: false, reason: 'requestPermission error: ' + (err && err.message || err) })
+    );
+  }
+
+  function bindGyro() {
+    if (state.gyroBound) return;
+    window.addEventListener('deviceorientation', onOrient);
+    state.gyroBound = true;
+  }
+
+  function setMode(mode) {
     state.mode = mode;
     state.target.x = 0;
     state.target.z = 0;
     state.calibBeta = null;
     state.calibGamma = null;
-    if (mode === 'tilt') {
-      const ok = await enableGyro();
-      if (!ok) return false;
-    }
-    return true;
   }
 
   // Smoothed tilt value used by the game.
@@ -99,5 +113,5 @@ export function createInput() {
     }
   }
 
-  return { setMode, getTilt, dispose };
+  return { setMode, getTilt, dispose, requestGyroPermission, needsIosPermission };
 }

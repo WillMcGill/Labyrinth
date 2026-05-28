@@ -165,15 +165,26 @@ async function main() {
   const statusEl = document.getElementById('status');
   const resetBtn = document.getElementById('reset');
 
-  modeSelect.addEventListener('change', async () => {
-    const ok = await input.setMode(modeSelect.value);
-    if (!ok) {
-      statusEl.textContent = 'Device tilt unavailable · falling back to mouse';
-      modeSelect.value = 'mouse';
-      input.setMode('mouse');
-    } else {
-      statusEl.textContent = hintFor(modeSelect.value);
+  // Pre-bound to the select element so iOS sees a real user gesture.
+  modeSelect.addEventListener('change', () => {
+    const mode = modeSelect.value;
+    if (mode !== 'tilt') {
+      input.setMode(mode);
+      statusEl.textContent = hintFor(mode);
+      return;
     }
+    // Call requestPermission() synchronously here — chaining it through
+    // multiple awaits in setMode() can drop iOS's transient user activation.
+    input.requestGyroPermission().then((result) => {
+      if (!result.ok) {
+        statusEl.textContent = result.reason + ' · falling back to mouse';
+        modeSelect.value = 'mouse';
+        input.setMode('mouse');
+      } else {
+        input.setMode('tilt');
+        statusEl.textContent = hintFor('tilt');
+      }
+    });
   });
 
   function hintFor(mode) {
