@@ -389,20 +389,20 @@ async function main() {
     );
   }
 
-  // Invisible ceiling to cap how high the ball can rise. Attached to the
-  // board body so it tilts in lockstep, keeping the constraint correct in
-  // board-local space at any tilt. Positioned at wall-top + 10% of ball
-  // height — only a sliver of clearance, so the ball is firmly contained
-  // by the walls and can never lift more than a tenth of its diameter off
-  // a wall top.
+  // Invisible ceiling pressed down to just above the floor — pins the ball
+  // to the floor so it can't bounce or hop off the board at all. Attached
+  // to the board body so it tilts in lockstep with the floor. Ceiling
+  // bottom sits at ball-diameter + a tiny 0.01 clearance: enough room for
+  // Rapier's solver to breathe, not enough for the ball to lift visibly.
   const CEIL_THICK = 0.02;
-  const CEIL_ABOVE_WALL = 0.10 * (BALL_RADIUS * 2);
+  const CEIL_FLOOR_CLEARANCE = 0.01;
+  const ceilingBottomY = 2 * BALL_RADIUS + CEIL_FLOOR_CLEARANCE;
   const boardHalfX = (level.cols * CELL) / 2;
   const boardHalfZ = (level.rows * CELL) / 2;
   world.createCollider(
     RAPIER.ColliderDesc
       .cuboid(boardHalfX, CEIL_THICK / 2, boardHalfZ)
-      .setTranslation(0, WALL_HEIGHT + CEIL_ABOVE_WALL + CEIL_THICK / 2, 0)
+      .setTranslation(0, ceilingBottomY + CEIL_THICK / 2, 0)
       .setFriction(0.05)
       .setRestitution(0),
     boardBody

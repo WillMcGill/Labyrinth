@@ -43,7 +43,8 @@ When tuning, change one value at a time and reload. Several of these knobs inter
 | Setting | Value | Notes |
 |---|---|---|
 | CEIL_THICK | `0.02` | Thin slab. |
-| CEIL_ABOVE_WALL | `0.10 * (BALL_RADIUS * 2)` | Ceiling bottom is at wall top + 10% of ball diameter. Lets the ball briefly hop above a wall on a hard bounce but can never launch off the board. |
+| CEIL_FLOOR_CLEARANCE | `0.01` | Tiny gap between ball-at-rest top and the ceiling. Just enough room for Rapier's solver to converge without the ball flickering against the ceiling. |
+| Ceiling bottom Y | `2 * BALL_RADIUS + CEIL_FLOOR_CLEARANCE` (≈ 0.57) | Pressed all the way down to the floor — ball is sandwiched between floor and ceiling so it can't visibly bounce, hop, or launch. Position is in board-local space; the ceiling is attached to the board body so it tilts with the floor. |
 | Friction | `0.05` | Low so the ball doesn't catch when it grazes the ceiling. |
 | Restitution | `0` | No bounce off the ceiling. |
 | Extent | `(level.cols × CELL, _, level.rows × CELL)` | Covers the full board area. |
