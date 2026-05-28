@@ -72,6 +72,10 @@ Two attempted alternatives that didn't work and shouldn't be re-tried:
 - Mobile pointer-mode is technically supported but UX is bad (single touch jumps the board hard to that screen position).
 - Bundle is ~880 KB gzipped, dominated by Rapier WASM + Three.js. Acceptable for a personal project.
 
+## Ongoing work
+
+Open ideas and planned improvements live in [TODO.md](TODO.md). Check it when the user asks "what's next" or "what should we work on" — it's the canonical backlog. Update it when work lands or new ideas surface.
+
 ## File map
 
 - [index.html](index.html) — viewport meta, HUD markup, motion-permission overlay, canvas
