@@ -28,6 +28,7 @@ Ideas and improvements for Labyrinth. Keep entries short — link to a PR or iss
 - [ ] Theme picker (warm wood vs. cool steel vs. neon)
 - [ ] Replace solid-color `MeshStandardMaterial` with actual textures — floor planks, brushed-metal walls, polished marble ball, etc. (today everything is flat color)
 - [ ] HUD button + control styling pass: current buttons are bare boxes and the status pill is plain. Re-evaluate hierarchy, sizing, hover/active states, dropdown styling, and whether the input selector belongs in the HUD at all or in a separate settings menu
+- [ ] Start screen / splash before gameplay begins. Surface control options (mouse / keyboard / device tilt) for the user to pick, and only start the game — including tilt sensor binding and iOS permission request — after they tap Start. This naturally folds in the "default to tilt on mobile" item (pre-select tilt for touch devices on the start screen) and the iOS permission gesture (the Start tap *is* the gesture), and lets the input selector move out of the always-visible HUD
 
 ## Engineering
 - [ ] Bundle is ~880 KB gzipped — switch from `@dimforge/rapier3d-compat` to the non-compat build with separate WASM file to cut JS bundle
