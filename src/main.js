@@ -120,6 +120,24 @@ async function main() {
     );
   }
 
+  // Invisible ceiling to cap how high the ball can rise. Attached to the
+  // board body so it tilts in lockstep, keeping the constraint correct in
+  // board-local space at any tilt. Positioned at wall-top + 75% of ball
+  // height — the ball can briefly hop above walls (e.g. on a hard wall
+  // bounce) by up to that much, but can never launch off the board.
+  const CEIL_THICK = 0.02;
+  const CEIL_ABOVE_WALL = 0.75 * (BALL_RADIUS * 2);
+  const boardHalfX = (level.cols * CELL) / 2;
+  const boardHalfZ = (level.rows * CELL) / 2;
+  world.createCollider(
+    RAPIER.ColliderDesc
+      .cuboid(boardHalfX, CEIL_THICK / 2, boardHalfZ)
+      .setTranslation(0, WALL_HEIGHT + CEIL_ABOVE_WALL + CEIL_THICK / 2, 0)
+      .setFriction(0.05)
+      .setRestitution(0),
+    boardBody
+  );
+
   // Goal pad + sensor
   const goalMesh = new THREE.Mesh(
     new THREE.BoxGeometry(CELL * 0.85, 0.06, CELL * 0.85),
@@ -146,7 +164,7 @@ async function main() {
 
   const ballBody = world.createRigidBody(
     RAPIER.RigidBodyDesc.dynamic()
-      .setTranslation(level.start.x, BALL_RADIUS + 0.2, level.start.z)
+      .setTranslation(level.start.x, BALL_RADIUS, level.start.z)
       .setLinearDamping(0.25)
       .setAngularDamping(0.35)
       .setCcdEnabled(true)
@@ -267,7 +285,7 @@ async function main() {
 
   function resetBall() {
     ballBody.setTranslation(
-      { x: level.start.x, y: BALL_RADIUS + 0.2, z: level.start.z },
+      { x: level.start.x, y: BALL_RADIUS, z: level.start.z },
       true
     );
     ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
