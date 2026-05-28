@@ -13,112 +13,177 @@ const FALL_THRESHOLD = -4;            // ball Y below this → fell into a hole
 // --- Procedural canvas textures ---------------------------------------------
 
 function makeWoodTexture() {
+  const SIZE = 512;
+  const PLANK_H = 128;          // 4 planks per tile
   const c = document.createElement('canvas');
-  c.width = c.height = 256;
+  c.width = c.height = SIZE;
   const ctx = c.getContext('2d');
 
-  // Base brown plank colour
-  ctx.fillStyle = '#6f4e2a';
-  ctx.fillRect(0, 0, 256, 256);
+  // Dark walnut base
+  ctx.fillStyle = '#2e1a0c';
+  ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // Four horizontal planks, each a slightly different shade
-  for (let p = 0; p < 4; p++) {
-    const s = 0.85 + Math.random() * 0.3;
-    ctx.fillStyle = `rgba(${(s * 111) | 0},${(s * 78) | 0},${(s * 42) | 0},0.5)`;
-    ctx.fillRect(0, p * 64, 256, 64);
+  // Per-plank tint — slight warm variation across the row
+  for (let p = 0; p < SIZE / PLANK_H; p++) {
+    const s = 0.85 + Math.random() * 0.35;
+    ctx.fillStyle = `rgba(${(s * 70) | 0},${(s * 42) | 0},${(s * 20) | 0},0.7)`;
+    ctx.fillRect(0, p * PLANK_H, SIZE, PLANK_H);
   }
 
-  // Plank seams
-  ctx.strokeStyle = 'rgba(20, 12, 5, 0.85)';
-  ctx.lineWidth = 2;
-  for (let y = 64; y < 256; y += 64) {
+  // Long flowing grain lines that span the whole plank length.
+  // Each plank gets a "centerline" Y and a swarm of slightly-offset
+  // wavy strokes around it — that's what reads as real wood grain.
+  for (let p = 0; p < SIZE / PLANK_H; p++) {
+    const baseY = p * PLANK_H + PLANK_H / 2;
+    const waveAmp = 6 + Math.random() * 8;
+    const waveFreq = 0.012 + Math.random() * 0.01;
+    const wavePhase = Math.random() * Math.PI * 2;
+    const grainCount = 24;
+    for (let i = 0; i < grainCount; i++) {
+      const offset = (i / grainCount - 0.5) * (PLANK_H * 0.85);
+      const darkness = 0.05 + Math.random() * 0.25;
+      ctx.strokeStyle = `rgba(15, 8, 2, ${darkness})`;
+      ctx.lineWidth = 0.6 + Math.random() * 0.8;
+      ctx.beginPath();
+      ctx.moveTo(0, baseY + offset + Math.sin(wavePhase) * waveAmp);
+      for (let x = 0; x <= SIZE; x += 4) {
+        const y = baseY + offset + Math.sin(x * waveFreq + wavePhase + i * 0.2) * waveAmp;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  // Knots — small dark elliptical patches with concentric rings
+  for (let i = 0; i < 4; i++) {
+    const kx = Math.random() * SIZE;
+    const ky = Math.random() * SIZE;
+    const kr = 8 + Math.random() * 10;
+    // Solid dark core
+    const core = ctx.createRadialGradient(kx, ky, 1, kx, ky, kr);
+    core.addColorStop(0, 'rgba(10, 4, 1, 0.95)');
+    core.addColorStop(0.6, 'rgba(20, 10, 4, 0.5)');
+    core.addColorStop(1, 'rgba(20, 10, 4, 0)');
+    ctx.fillStyle = core;
+    ctx.fillRect(kx - kr, ky - kr, kr * 2, kr * 2);
+    // Concentric rings — flowing grain bending around the knot
+    ctx.strokeStyle = 'rgba(8, 4, 0, 0.4)';
+    for (let r = kr * 1.2; r < kr * 3; r += 2.5) {
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      ctx.ellipse(kx, ky, r, r * 0.7, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  // Plank seams — dark gap with subtle inner shadow
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+  ctx.lineWidth = 3;
+  for (let y = PLANK_H; y < SIZE; y += PLANK_H) {
     ctx.beginPath();
     ctx.moveTo(0, y);
-    ctx.lineTo(256, y);
+    ctx.lineTo(SIZE, y);
     ctx.stroke();
   }
-
-  // Grain — wavy darker lines across each plank
-  ctx.strokeStyle = 'rgba(40, 22, 8, 0.25)';
+  ctx.strokeStyle = 'rgba(80, 50, 25, 0.4)';
   ctx.lineWidth = 1;
-  for (let i = 0; i < 40; i++) {
-    const y0 = Math.random() * 256;
+  for (let y = PLANK_H; y < SIZE; y += PLANK_H) {
     ctx.beginPath();
-    ctx.moveTo(0, y0);
-    for (let x = 0; x <= 256; x += 8) {
-      ctx.lineTo(x, y0 + Math.sin(x * 0.05 + i) * 2);
-    }
+    ctx.moveTo(0, y - 2);
+    ctx.lineTo(SIZE, y - 2);
     ctx.stroke();
-  }
-
-  // A few knots
-  for (let i = 0; i < 3; i++) {
-    const x = Math.random() * 256;
-    const y = Math.random() * 256;
-    const r = 4 + Math.random() * 6;
-    const g = ctx.createRadialGradient(x, y, 1, x, y, r);
-    g.addColorStop(0, 'rgba(20,10,3,0.9)');
-    g.addColorStop(1, 'rgba(20,10,3,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(x - r, y - r, r * 2, r * 2);
   }
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 8;
   return tex;
 }
 
 function makeStoneTexture() {
+  const SIZE = 512;
   const c = document.createElement('canvas');
-  c.width = c.height = 256;
+  c.width = c.height = SIZE;
   const ctx = c.getContext('2d');
 
-  // Mid-gray base
-  ctx.fillStyle = '#7d7872';
-  ctx.fillRect(0, 0, 256, 256);
+  // Dark grout background — what shows between the stones
+  ctx.fillStyle = '#27241f';
+  ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // Irregular stone shapes
-  for (let i = 0; i < 14; i++) {
-    const cx = Math.random() * 256;
-    const cy = Math.random() * 256;
-    const r = 28 + Math.random() * 30;
-    const s = 0.7 + Math.random() * 0.5;
-    ctx.fillStyle = `rgb(${(s * 125) | 0},${(s * 120) | 0},${(s * 114) | 0})`;
-    ctx.beginPath();
-    const sides = 5 + ((Math.random() * 3) | 0);
+  // Stone palette — mostly grays with slight warm and cool casts
+  const stoneColors = [
+    [128, 122, 114], [142, 138, 132], [110, 105, 98],
+    [156, 148, 138], [98, 95, 92],  [134, 128, 118],
+    [120, 112, 104], [148, 142, 132],
+  ];
+
+  // Mixed-size stones — a few large, more medium, lots of small.
+  // Sort largest first so smaller stones can paint over the gaps.
+  const stones = [];
+  for (let i = 0; i < 4; i++) stones.push(70 + Math.random() * 30); // big
+  for (let i = 0; i < 12; i++) stones.push(35 + Math.random() * 25); // medium
+  for (let i = 0; i < 22; i++) stones.push(14 + Math.random() * 18); // small
+  stones.sort((a, b) => b - a);
+
+  for (const baseR of stones) {
+    const cx = Math.random() * SIZE;
+    const cy = Math.random() * SIZE;
+    const [r, g, b] = stoneColors[(Math.random() * stoneColors.length) | 0];
+    const lightVar = (Math.random() - 0.5) * 30;
+
+    // Irregular polygon outline
+    const sides = 6 + ((Math.random() * 4) | 0);
+    const verts = [];
     for (let j = 0; j < sides; j++) {
-      const a = (j / sides) * Math.PI * 2;
-      const rr = r * (0.8 + Math.random() * 0.4);
-      const x = cx + Math.cos(a) * rr;
-      const y = cy + Math.sin(a) * rr;
-      if (j === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      const a = (j / sides) * Math.PI * 2 + Math.random() * 0.3;
+      const rr = baseR * (0.75 + Math.random() * 0.5);
+      verts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+    }
+
+    // Stone fill with a slight inner gradient for fake depth
+    const grad = ctx.createRadialGradient(
+      cx - baseR * 0.3, cy - baseR * 0.3, baseR * 0.1,
+      cx, cy, baseR
+    );
+    grad.addColorStop(0, `rgb(${(r + 20 + lightVar) | 0},${(g + 20 + lightVar) | 0},${(b + 20 + lightVar) | 0})`);
+    grad.addColorStop(1, `rgb(${(r - 15 + lightVar) | 0},${(g - 15 + lightVar) | 0},${(b - 15 + lightVar) | 0})`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    for (let j = 0; j < verts.length; j++) {
+      const [vx, vy] = verts[j];
+      if (j === 0) ctx.moveTo(vx, vy);
+      else ctx.lineTo(vx, vy);
     }
     ctx.closePath();
     ctx.fill();
-  }
 
-  // Cracks
-  ctx.strokeStyle = 'rgba(25, 20, 15, 0.5)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 10; i++) {
-    ctx.beginPath();
-    let x = Math.random() * 256;
-    let y = Math.random() * 256;
-    ctx.moveTo(x, y);
-    for (let s = 0; s < 4; s++) {
-      x += (Math.random() - 0.5) * 60;
-      y += (Math.random() - 0.5) * 60;
-      ctx.lineTo(x, y);
-    }
+    // Stone outline (the visible grout edge)
+    ctx.strokeStyle = 'rgba(20, 16, 12, 0.85)';
+    ctx.lineWidth = 1.5 + Math.random() * 1.5;
     ctx.stroke();
   }
 
-  // Pixel-noise speckle for rough feel
-  const img = ctx.getImageData(0, 0, 256, 256);
+  // Surface roughness — fine random pits on each stone
+  ctx.fillStyle = 'rgba(40, 35, 28, 0.4)';
+  for (let i = 0; i < 400; i++) {
+    const x = Math.random() * SIZE;
+    const y = Math.random() * SIZE;
+    const s = 0.6 + Math.random() * 1.4;
+    ctx.fillRect(x, y, s, s);
+  }
+  ctx.fillStyle = 'rgba(220, 215, 205, 0.18)';
+  for (let i = 0; i < 200; i++) {
+    const x = Math.random() * SIZE;
+    const y = Math.random() * SIZE;
+    const s = 0.6 + Math.random() * 1.4;
+    ctx.fillRect(x, y, s, s);
+  }
+
+  // Fine speckle noise overlay
+  const img = ctx.getImageData(0, 0, SIZE, SIZE);
   for (let i = 0; i < img.data.length; i += 4) {
-    const n = (Math.random() - 0.5) * 30;
+    const n = (Math.random() - 0.5) * 22;
     img.data[i] = Math.max(0, Math.min(255, img.data[i] + n));
     img.data[i + 1] = Math.max(0, Math.min(255, img.data[i + 1] + n));
     img.data[i + 2] = Math.max(0, Math.min(255, img.data[i + 2] + n));
@@ -128,6 +193,7 @@ function makeStoneTexture() {
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 8;
   return tex;
 }
 
@@ -162,11 +228,11 @@ async function main() {
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.45);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.30);
   scene.add(ambient);
 
-  const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-  dir.position.set(8, 16, 6);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.70);
+  dir.position.set(12, 12, 2);
   dir.castShadow = true;
   dir.shadow.mapSize.set(2048, 2048);
   const s = 10;
