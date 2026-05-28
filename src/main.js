@@ -288,7 +288,6 @@ async function main() {
   // wall is independently oriented.
   const stoneTexturePool = [];
   for (let i = 0; i < 4; i++) stoneTexturePool.push(makeStoneTexture());
-  const matHole = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const matGoal = new THREE.MeshStandardMaterial({
     color: 0x10b981,
     emissive: 0x0c5a44,
@@ -331,14 +330,9 @@ async function main() {
     );
   }
 
-  // Hole visuals (no collider — ball falls through the gap in the floor)
-  const holeGeom = new THREE.PlaneGeometry(CELL * 0.92, CELL * 0.92);
-  for (const { x, z } of level.holes) {
-    const mesh = new THREE.Mesh(holeGeom, matHole);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(x, -FLOOR_THICKNESS - 0.002, z);
-    boardGroup.add(mesh);
-  }
+  // Hole cells get no visual mesh and no floor collider. The camera looks
+  // through the resulting gap to the scene background (sky/grass), giving
+  // a true cut-out hole rather than a faked black square.
 
   // Walls — visual geometry has slight vertex noise on interior side
   // vertices so each wall reads as a rough stone block. The collider is

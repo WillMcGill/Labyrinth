@@ -142,8 +142,7 @@ All textures are procedural — drawn into HTML canvases inside `makeWoodTexture
 ### Hole visual
 | Setting | Value | Notes |
 |---|---|---|
-| Material | `MeshBasicMaterial` (not Standard) | `Basic` ignores lights entirely — the hole stays pure black even under bright environment. |
-| Geometry | `PlaneGeometry(CELL × 0.92, CELL × 0.92)` | Slightly inset from the cell edge for a clean visual. |
+| Mesh | none | Hole cells render no mesh at all — the gap in the floor lets the camera see the scene `background` (sky/grass gradient) through it, which reads as a real cut-out rather than a black square. |
 
 ---
 
