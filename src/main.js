@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { parseLevel, CELL } from './maze.js';
 import { createInput } from './controls.js';
@@ -32,6 +33,13 @@ async function main() {
   const cameraDir = new THREE.Vector3(0, 17, 13).normalize();
   // Half-diagonal of the board's bounding rect (plus margin) we want in view.
   const BOARD_HALF_EXTENT = 7.5;
+
+  // Procedural studio environment for metallic-material reflections.
+  // Set as scene.environment only — scene.background stays the dark color
+  // so the maze still has its current look; just the metallic ball will
+  // pick up reflections from this envmap.
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.45);
   scene.add(ambient);
@@ -71,9 +79,9 @@ async function main() {
     roughness: 0.35,
   });
   const matBall = new THREE.MeshStandardMaterial({
-    color: 0xfbbf24,
-    roughness: 0.25,
-    metalness: 0.55,
+    color: 0xd6d8dc,    // light neutral steel
+    roughness: 0.12,    // near-mirror finish
+    metalness: 1.0,     // fully metallic — reflections come from scene.environment
   });
 
   // Floor tiles
