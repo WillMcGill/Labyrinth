@@ -261,11 +261,24 @@ async function main() {
     roughness: 0.85,
     metalness: 0,
   });
-  const matWall = new THREE.MeshStandardMaterial({
-    map: makeStoneTexture(),
-    roughness: 0.95,
-    metalness: 0,
-  });
+  // Wall material pool: 4 distinct stone-texture canvases × 4 rotation
+  // angles = 16 visual variants. Random pick per wall breaks the obvious
+  // repetition that one shared texture caused.
+  const wallMaterials = [];
+  for (let t = 0; t < 4; t++) {
+    const baseTex = makeStoneTexture();
+    for (let r = 0; r < 4; r++) {
+      const tex = baseTex.clone();
+      tex.needsUpdate = true;
+      tex.center.set(0.5, 0.5);
+      tex.rotation = r * (Math.PI / 2);
+      wallMaterials.push(new THREE.MeshStandardMaterial({
+        map: tex,
+        roughness: 0.95,
+        metalness: 0,
+      }));
+    }
+  }
   const matHole = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const matGoal = new THREE.MeshStandardMaterial({
     color: 0x10b981,
@@ -306,10 +319,31 @@ async function main() {
     boardGroup.add(mesh);
   }
 
-  // Walls
-  const wallGeom = new THREE.BoxGeometry(CELL, WALL_HEIGHT, CELL);
+  // Walls — visual geometry has slight vertex noise on interior side
+  // vertices so each wall reads as a rough stone block. The collider is
+  // still a perfect 1x0.7x1 cuboid below, so ball physics is unchanged.
+  // Top and bottom vertices are skipped so walls stay flush with the
+  // floor and the invisible ceiling. One shared geometry is fine — the
+  // texture variation already breaks visual monotony.
+  const wallGeom = new THREE.BoxGeometry(CELL, WALL_HEIGHT, CELL, 3, 4, 3);
+  {
+    const pos = wallGeom.attributes.position;
+    const halfH = WALL_HEIGHT / 2;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      // Skip vertices on the top or bottom face (keep walls flush).
+      if (Math.abs(Math.abs(y) - halfH) < 0.01) continue;
+      pos.setX(i, pos.getX(i) + (Math.random() - 0.5) * 0.05);
+      pos.setZ(i, pos.getZ(i) + (Math.random() - 0.5) * 0.05);
+      pos.setY(i, y + (Math.random() - 0.5) * 0.03);
+    }
+    pos.needsUpdate = true;
+    wallGeom.computeVertexNormals();
+  }
+
   for (const { x, z } of level.walls) {
-    const mesh = new THREE.Mesh(wallGeom, matWall);
+    const mat = wallMaterials[(Math.random() * wallMaterials.length) | 0];
+    const mesh = new THREE.Mesh(wallGeom, mat);
     mesh.position.set(x, WALL_HEIGHT / 2, z);
     mesh.castShadow = true;
     mesh.receiveShadow = true;

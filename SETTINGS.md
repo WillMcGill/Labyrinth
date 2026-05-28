@@ -109,6 +109,9 @@ All textures are procedural — drawn into HTML canvases inside `makeWoodTexture
 | Noise overlay | ±22 RGB jitter per pixel | Final pass for organic feel. |
 | Material | `MeshStandardMaterial`, `roughness 0.95`, `metalness 0` | Stone is rough and non-metallic. |
 | Anisotropy | `8` | Same reason as floor. |
+| Material pool | 4 distinct stone canvases × 4 texture rotations = **16 materials** | Per wall picks one at random — breaks the obvious tile-repeat that one shared texture caused. Increase the canvas count for even more variety (cost: more GPU memory). |
+| Wall geometry subdivisions | `BoxGeometry(CELL, WALL_HEIGHT, CELL, 3, 4, 3)` | Subdivisions on width × height × depth. Needed so we have interior side vertices to displace; the actual rocky look comes from the displacement below. |
+| Rocky vertex displacement | ±0.05 in X/Z, ±0.03 in Y on interior side vertices only | Top and bottom face vertices are skipped (kept flush with floor + ceiling). Small enough that the visual wall stays inside the cuboid collider — ball physics is unchanged. One shared rocky geometry across all walls; texture variety already breaks visual monotony. Larger displacement → more obviously irregular walls but risk of visual/collider mismatch becoming noticeable. |
 
 ### Ball — polished steel
 | Setting | Value | Notes |
