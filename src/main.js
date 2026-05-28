@@ -247,8 +247,9 @@ async function main() {
 
   // --- Resize ---------------------------------------------------------------
   function resize() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (w === 0 || h === 0) return;
     const aspect = w / h;
     renderer.setSize(w, h, false);
     camera.aspect = aspect;
@@ -266,6 +267,11 @@ async function main() {
   }
   resize();
   window.addEventListener('resize', resize);
+  // HUD height can change when status text rewraps — re-fit the canvas.
+  const hud = document.getElementById('hud');
+  if (typeof ResizeObserver !== 'undefined' && hud) {
+    new ResizeObserver(resize).observe(hud);
+  }
 
   // --- Loop -----------------------------------------------------------------
   const boardQuat = new THREE.Quaternion();
