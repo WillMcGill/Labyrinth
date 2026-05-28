@@ -28,7 +28,8 @@ Ideas and improvements for Labyrinth. Keep entries short — link to a PR or iss
 - [ ] Subtle ball trail or motion blur
 - [ ] Sound effects on ball bounce, hole-fall, win
 - [ ] Theme picker (warm wood vs. cool steel vs. neon)
-- [ ] Replace solid-color `MeshStandardMaterial` with actual textures — floor planks, brushed-metal walls, polished marble ball, etc. (today everything is flat color)
+- [x] Replace solid-color `MeshStandardMaterial` with actual textures — floor planks, brushed-metal walls, polished marble ball, etc. (today everything is flat color)
+- [ ] Break up the obvious texture tiling. Wood and stone textures from the `ball-physics` branch are shared across all tiles, so adjacent cells show identical patterns — readable up close but visibly repeating. Options: per-tile random texture rotation (cheapest), per-tile texture clones with random offsets (more variation), or one big texture spanning the whole board with per-tile UV slicing (least repetition, more setup)
 - [ ] HUD button + control styling pass: current buttons are bare boxes and the status pill is plain. Re-evaluate hierarchy, sizing, hover/active states, dropdown styling, and whether the input selector belongs in the HUD at all or in a separate settings menu
 - [ ] Start screen / splash before gameplay begins. Surface control options (mouse / keyboard / device tilt) for the user to pick, and only start the game — including tilt sensor binding and iOS permission request — after they tap Start. This naturally folds in the "default to tilt on mobile" item (pre-select tilt for touch devices on the start screen) and the iOS permission gesture (the Start tap *is* the gesture), and lets the input selector move out of the always-visible HUD
 
