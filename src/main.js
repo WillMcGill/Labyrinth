@@ -10,6 +10,127 @@ const WALL_HEIGHT = 0.7;
 const FLOOR_THICKNESS = 0.2;
 const FALL_THRESHOLD = -4;            // ball Y below this → fell into a hole
 
+// --- Procedural canvas textures ---------------------------------------------
+
+function makeWoodTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const ctx = c.getContext('2d');
+
+  // Base brown plank colour
+  ctx.fillStyle = '#6f4e2a';
+  ctx.fillRect(0, 0, 256, 256);
+
+  // Four horizontal planks, each a slightly different shade
+  for (let p = 0; p < 4; p++) {
+    const s = 0.85 + Math.random() * 0.3;
+    ctx.fillStyle = `rgba(${(s * 111) | 0},${(s * 78) | 0},${(s * 42) | 0},0.5)`;
+    ctx.fillRect(0, p * 64, 256, 64);
+  }
+
+  // Plank seams
+  ctx.strokeStyle = 'rgba(20, 12, 5, 0.85)';
+  ctx.lineWidth = 2;
+  for (let y = 64; y < 256; y += 64) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(256, y);
+    ctx.stroke();
+  }
+
+  // Grain — wavy darker lines across each plank
+  ctx.strokeStyle = 'rgba(40, 22, 8, 0.25)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 40; i++) {
+    const y0 = Math.random() * 256;
+    ctx.beginPath();
+    ctx.moveTo(0, y0);
+    for (let x = 0; x <= 256; x += 8) {
+      ctx.lineTo(x, y0 + Math.sin(x * 0.05 + i) * 2);
+    }
+    ctx.stroke();
+  }
+
+  // A few knots
+  for (let i = 0; i < 3; i++) {
+    const x = Math.random() * 256;
+    const y = Math.random() * 256;
+    const r = 4 + Math.random() * 6;
+    const g = ctx.createRadialGradient(x, y, 1, x, y, r);
+    g.addColorStop(0, 'rgba(20,10,3,0.9)');
+    g.addColorStop(1, 'rgba(20,10,3,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
+function makeStoneTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const ctx = c.getContext('2d');
+
+  // Mid-gray base
+  ctx.fillStyle = '#7d7872';
+  ctx.fillRect(0, 0, 256, 256);
+
+  // Irregular stone shapes
+  for (let i = 0; i < 14; i++) {
+    const cx = Math.random() * 256;
+    const cy = Math.random() * 256;
+    const r = 28 + Math.random() * 30;
+    const s = 0.7 + Math.random() * 0.5;
+    ctx.fillStyle = `rgb(${(s * 125) | 0},${(s * 120) | 0},${(s * 114) | 0})`;
+    ctx.beginPath();
+    const sides = 5 + ((Math.random() * 3) | 0);
+    for (let j = 0; j < sides; j++) {
+      const a = (j / sides) * Math.PI * 2;
+      const rr = r * (0.8 + Math.random() * 0.4);
+      const x = cx + Math.cos(a) * rr;
+      const y = cy + Math.sin(a) * rr;
+      if (j === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Cracks
+  ctx.strokeStyle = 'rgba(25, 20, 15, 0.5)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 10; i++) {
+    ctx.beginPath();
+    let x = Math.random() * 256;
+    let y = Math.random() * 256;
+    ctx.moveTo(x, y);
+    for (let s = 0; s < 4; s++) {
+      x += (Math.random() - 0.5) * 60;
+      y += (Math.random() - 0.5) * 60;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Pixel-noise speckle for rough feel
+  const img = ctx.getImageData(0, 0, 256, 256);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const n = (Math.random() - 0.5) * 30;
+    img.data[i] = Math.max(0, Math.min(255, img.data[i] + n));
+    img.data[i + 1] = Math.max(0, Math.min(255, img.data[i + 1] + n));
+    img.data[i + 2] = Math.max(0, Math.min(255, img.data[i + 2] + n));
+  }
+  ctx.putImageData(img, 0, 0);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
 async function main() {
   await RAPIER.init();
 
@@ -69,8 +190,16 @@ async function main() {
   const boardGroup = new THREE.Group();
   scene.add(boardGroup);
 
-  const matFloor = new THREE.MeshStandardMaterial({ color: 0x3a4257, roughness: 0.92 });
-  const matWall = new THREE.MeshStandardMaterial({ color: 0x8c93a5, roughness: 0.65 });
+  const matFloor = new THREE.MeshStandardMaterial({
+    map: makeWoodTexture(),
+    roughness: 0.85,
+    metalness: 0,
+  });
+  const matWall = new THREE.MeshStandardMaterial({
+    map: makeStoneTexture(),
+    roughness: 0.95,
+    metalness: 0,
+  });
   const matHole = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const matGoal = new THREE.MeshStandardMaterial({
     color: 0x10b981,
