@@ -76,6 +76,10 @@ Two attempted alternatives that didn't work and shouldn't be re-tried:
 
 Open ideas and planned improvements live in [TODO.md](TODO.md). Check it when the user asks "what's next" or "what should we work on" — it's the canonical backlog. Update it when work lands or new ideas surface.
 
+## Tunable settings
+
+Every tunable in `src/main.js` — physics, lighting, textures, perf — is documented in [SETTINGS.md](SETTINGS.md) with current values and the rationale for each. When the user asks to tune *anything* visual or feel-related ("ball feels too fast", "darker mood", "stronger shadows", etc.), read SETTINGS.md first to see which knobs are relevant and what they currently are. Update SETTINGS.md whenever you change one of the documented values — the doc and code drift apart fast otherwise.
+
 ## File map
 
 - [index.html](index.html) — viewport meta, HUD markup, motion-permission overlay, canvas
