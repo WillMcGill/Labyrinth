@@ -23,11 +23,11 @@ html, body {
   top: 0;
   left: 0;
   right: 0;
-  padding: 12px 16px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) calc(env(safe-area-inset-right, 0px) + 12px) 12px calc(env(safe-area-inset-left, 0px) + 12px);
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 10px;
   pointer-events: none;
   font-size: 14px;
 }
@@ -39,17 +39,21 @@ html, body {
   padding: 6px 10px;
   border-radius: 6px;
   backdrop-filter: blur(8px);
+  max-width: 60%;
 }
 
 #controls {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   background: rgba(20, 24, 33, 0.7);
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-radius: 6px;
   backdrop-filter: blur(8px);
+  flex-shrink: 0;
 }
+
+#controls label { display: none; }
 
 #controls select,
 #controls button {
@@ -57,12 +61,18 @@ html, body {
   color: #e6e8ee;
   border: 1px solid #2c3342;
   border-radius: 4px;
-  padding: 4px 8px;
+  padding: 6px 10px;
   font: inherit;
   cursor: pointer;
 }
 
 #controls button:hover { background: #262c39; }
+
+@media (min-width: 640px) {
+  #controls label { display: inline; }
+  #controls { gap: 10px; padding: 6px 10px; }
+  #status { max-width: none; }
+}
 
 #banner {
   position: fixed;
