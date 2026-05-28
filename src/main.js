@@ -124,11 +124,12 @@ async function main() {
 
   // Invisible ceiling to cap how high the ball can rise. Attached to the
   // board body so it tilts in lockstep, keeping the constraint correct in
-  // board-local space at any tilt. Positioned at wall-top + 75% of ball
-  // height — the ball can briefly hop above walls (e.g. on a hard wall
-  // bounce) by up to that much, but can never launch off the board.
+  // board-local space at any tilt. Positioned at wall-top + 10% of ball
+  // height — only a sliver of clearance, so the ball is firmly contained
+  // by the walls and can never lift more than a tenth of its diameter off
+  // a wall top.
   const CEIL_THICK = 0.02;
-  const CEIL_ABOVE_WALL = 0.75 * (BALL_RADIUS * 2);
+  const CEIL_ABOVE_WALL = 0.10 * (BALL_RADIUS * 2);
   const boardHalfX = (level.cols * CELL) / 2;
   const boardHalfZ = (level.rows * CELL) / 2;
   world.createCollider(
