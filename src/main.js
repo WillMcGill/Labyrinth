@@ -171,6 +171,28 @@ async function main() {
   const motionEnableBtn = document.getElementById('motion-enable');
   const motionCancelBtn = document.getElementById('motion-cancel');
   const motionErrorEl = document.getElementById('motion-error');
+  const recenterBtn = document.getElementById('recenter');
+
+  let paused = false;
+  function pauseForCalibration() {
+    paused = true;
+    ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    ballBody.setAngvel({ x: 0, y: 0, z: 0 }, true);
+  }
+  function resumeAfterCalibration() {
+    paused = false;
+  }
+
+  function setActiveMode(mode) {
+    input.setMode(mode);
+    recenterBtn.hidden = mode !== 'tilt';
+    statusEl.textContent = hintFor(mode);
+  }
+
+  function calibrateAndPlay() {
+    pauseForCalibration();
+    input.calibrate().then(resumeAfterCalibration);
+  }
 
   function tryEnableTilt() {
     motionErrorEl.textContent = '';
@@ -181,11 +203,11 @@ async function main() {
       if (!result.ok) {
         statusEl.textContent = result.reason + ' · falling back to mouse';
         modeSelect.value = 'mouse';
-        input.setMode('mouse');
+        setActiveMode('mouse');
         return;
       }
-      input.setMode('tilt');
-      statusEl.textContent = hintFor('tilt');
+      setActiveMode('tilt');
+      calibrateAndPlay();
     });
   }
 
@@ -193,9 +215,22 @@ async function main() {
   motionCancelBtn.addEventListener('click', () => {
     motionOverlay.hidden = true;
     modeSelect.value = 'mouse';
-    input.setMode('mouse');
-    statusEl.textContent = hintFor('mouse');
+    setActiveMode('mouse');
   });
+  recenterBtn.addEventListener('click', calibrateAndPlay);
+
+  // Rotating the device invalidates the tilt baseline because the same
+  // physical hold produces different beta/gamma when projected onto the new
+  // screen frame. Re-run calibration automatically while in tilt mode.
+  function onOrientationChange() {
+    if (modeSelect.value === 'tilt' && !recenterBtn.hidden) {
+      calibrateAndPlay();
+    }
+  }
+  window.addEventListener('orientationchange', onOrientationChange);
+  if (screen && screen.orientation && typeof screen.orientation.addEventListener === 'function') {
+    screen.orientation.addEventListener('change', onOrientationChange);
+  }
 
   modeSelect.addEventListener('change', () => {
     const mode = modeSelect.value;
@@ -211,16 +246,15 @@ async function main() {
         if (!result.ok) {
           statusEl.textContent = result.reason + ' · falling back to mouse';
           modeSelect.value = 'mouse';
-          input.setMode('mouse');
+          setActiveMode('mouse');
         } else {
-          input.setMode('tilt');
-          statusEl.textContent = hintFor('tilt');
+          setActiveMode('tilt');
+          calibrateAndPlay();
         }
       });
       return;
     }
-    input.setMode(mode);
-    statusEl.textContent = hintFor(mode);
+    setActiveMode(mode);
   });
 
   function hintFor(mode) {
@@ -291,7 +325,9 @@ async function main() {
     });
     boardGroup.quaternion.copy(boardQuat);
 
-    world.step();
+    if (!paused) {
+      world.step();
+    }
 
     const t = ballBody.translation();
     const r = ballBody.rotation();

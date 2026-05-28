@@ -69,6 +69,12 @@ body {
   cursor: pointer;
 }
 
+#recenter {
+  padding: 6px 10px;
+  font-size: 16px;
+  line-height: 1;
+}
+
 #controls button:hover { background: #262c39; }
 
 @media (min-width: 640px) {
