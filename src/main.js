@@ -50,7 +50,9 @@ async function main() {
   scene.add(dir);
 
   // --- Physics --------------------------------------------------------------
-  const world = new RAPIER.World(new RAPIER.Vector3(0, -9.81, 0));
+  // Stronger-than-Earth gravity for snappier roll response — rolling
+  // acceleration is g·sin(tilt) so this is the main lever for "faster".
+  const world = new RAPIER.World(new RAPIER.Vector3(0, -15.0, 0));
 
   const boardBody = world.createRigidBody(
     RAPIER.RigidBodyDesc.kinematicPositionBased()
@@ -165,7 +167,7 @@ async function main() {
   const ballBody = world.createRigidBody(
     RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(level.start.x, BALL_RADIUS, level.start.z)
-      .setLinearDamping(0.25)
+      .setLinearDamping(0.15)   // lower drag so the ball keeps speed longer
       .setAngularDamping(0.35)
       .setCcdEnabled(true)
   );
@@ -174,7 +176,7 @@ async function main() {
       .ball(BALL_RADIUS)
       .setFriction(0.6)
       .setRestitution(0.1)
-      .setDensity(2.0),
+      .setDensity(4.0),          // heavier ball — more momentum on collisions
     ballBody
   );
 
