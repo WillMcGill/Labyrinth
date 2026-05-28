@@ -35,8 +35,11 @@ export function createInput() {
   // Project the device's raw (beta, gamma) onto the user's current screen
   // frame so that "right on screen" always rolls the ball right, regardless
   // of whether the phone is held in portrait, landscape, or upside-down.
+  // Angle is negated because iOS reports screen rotation with the opposite
+  // handedness from the rotation matrix below; without the negation, both
+  // axes are inverted in landscape (portrait is unaffected because angle=0).
   function deviceToScreen(beta, gamma) {
-    const a = (screen?.orientation?.angle ?? window.orientation ?? 0) * Math.PI / 180;
+    const a = -(screen?.orientation?.angle ?? window.orientation ?? 0) * Math.PI / 180;
     const cos = Math.cos(a);
     const sin = Math.sin(a);
     return {
