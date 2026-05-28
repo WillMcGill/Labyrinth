@@ -1,6 +1,9 @@
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 export function createInput() {
+  const CALIB_SAMPLES = 5;
+  const CALIB_TIMEOUT_MS = 2000;
+
   const state = {
     mode: 'mouse',
     target: { x: 0, z: 0 },
@@ -8,6 +11,10 @@ export function createInput() {
     gyroBound: false,
     calibBeta: null,
     calibGamma: null,
+    calibrating: false,
+    calibBuffer: [],
+    calibResolve: null,
+    calibTimeout: null,
   };
 
   const onPointerMove = (e) => {
@@ -29,13 +36,61 @@ export function createInput() {
     if (state.mode !== 'tilt') return;
     const beta = e.beta ?? 0;   // front/back (-180..180)
     const gamma = e.gamma ?? 0; // left/right (-90..90)
-    if (state.calibBeta === null) {
-      state.calibBeta = beta;
-      state.calibGamma = gamma;
+
+    if (state.calibrating) {
+      state.calibBuffer.push({ beta, gamma });
+      if (state.calibBuffer.length >= CALIB_SAMPLES) {
+        finishCalibration();
+      }
+      return;
     }
+
+    if (state.calibBeta === null) return; // not calibrated yet, hold neutral
+
     state.target.x = clamp((gamma - state.calibGamma) / 25, -1, 1);
     state.target.z = clamp((beta - state.calibBeta) / 25, -1, 1);
   };
+
+  function finishCalibration() {
+    const n = state.calibBuffer.length;
+    if (n > 0) {
+      let sumB = 0, sumG = 0;
+      for (const s of state.calibBuffer) { sumB += s.beta; sumG += s.gamma; }
+      state.calibBeta = sumB / n;
+      state.calibGamma = sumG / n;
+    } else {
+      // Safety net: sensor never delivered. Use neutral baseline so the
+      // game doesn't freeze waiting for samples that won't arrive.
+      state.calibBeta = 0;
+      state.calibGamma = 0;
+    }
+    state.calibrating = false;
+    state.calibBuffer = [];
+    if (state.calibTimeout) {
+      clearTimeout(state.calibTimeout);
+      state.calibTimeout = null;
+    }
+    if (state.calibResolve) {
+      const resolve = state.calibResolve;
+      state.calibResolve = null;
+      resolve();
+    }
+  }
+
+  function calibrate() {
+    // Cancel any in-flight calibration cleanly so callers always get a resolve.
+    if (state.calibrating && state.calibResolve) {
+      finishCalibration();
+    }
+    state.calibrating = true;
+    state.calibBuffer = [];
+    state.calibBeta = null;
+    state.calibGamma = null;
+    return new Promise((resolve) => {
+      state.calibResolve = resolve;
+      state.calibTimeout = setTimeout(finishCalibration, CALIB_TIMEOUT_MS);
+    });
+  }
 
   window.addEventListener('pointermove', onPointerMove);
   window.addEventListener('keydown', onKeyDown);
@@ -80,8 +135,16 @@ export function createInput() {
     state.mode = mode;
     state.target.x = 0;
     state.target.z = 0;
+    // Switching modes invalidates the tilt baseline; tilt mode must re-call
+    // calibrate() before emitting movement.
     state.calibBeta = null;
     state.calibGamma = null;
+    state.calibrating = false;
+    state.calibBuffer = [];
+    if (state.calibTimeout) {
+      clearTimeout(state.calibTimeout);
+      state.calibTimeout = null;
+    }
   }
 
   // Smoothed tilt value used by the game.
@@ -113,5 +176,5 @@ export function createInput() {
     }
   }
 
-  return { setMode, getTilt, dispose, requestGyroPermission, needsIosPermission };
+  return { setMode, getTilt, dispose, requestGyroPermission, needsIosPermission, calibrate };
 }
