@@ -261,24 +261,11 @@ async function main() {
     roughness: 0.85,
     metalness: 0,
   });
-  // Wall material pool: 4 distinct stone-texture canvases × 4 rotation
-  // angles = 16 visual variants. Random pick per wall breaks the obvious
-  // repetition that one shared texture caused.
-  const wallMaterials = [];
-  for (let t = 0; t < 4; t++) {
-    const baseTex = makeStoneTexture();
-    for (let r = 0; r < 4; r++) {
-      const tex = baseTex.clone();
-      tex.needsUpdate = true;
-      tex.center.set(0.5, 0.5);
-      tex.rotation = r * (Math.PI / 2);
-      wallMaterials.push(new THREE.MeshStandardMaterial({
-        map: tex,
-        roughness: 0.95,
-        metalness: 0,
-      }));
-    }
-  }
+  // Pool of distinct stone texture canvases — per-wall material below
+  // clones a random one and applies its own random 90° rotation, so every
+  // wall is independently oriented.
+  const stoneTexturePool = [];
+  for (let i = 0; i < 4; i++) stoneTexturePool.push(makeStoneTexture());
   const matHole = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const matGoal = new THREE.MeshStandardMaterial({
     color: 0x10b981,
@@ -286,10 +273,22 @@ async function main() {
     emissiveIntensity: 0.6,
     roughness: 0.35,
   });
+  // Cube camera at the ball's position captures the scene each frame into
+  // a cube map so the polished ball reflects the actual walls/floor below
+  // (not just the studio env map). 256² is enough resolution for a small
+  // reflective sphere. Overrides scene.environment on the ball material.
+  const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256, {
+    generateMipmaps: true,
+    minFilter: THREE.LinearMipmapLinearFilter,
+  });
+  const cubeCamera = new THREE.CubeCamera(0.1, 100, cubeRenderTarget);
+  scene.add(cubeCamera);
+
   const matBall = new THREE.MeshStandardMaterial({
-    color: 0xd6d8dc,    // light neutral steel
-    roughness: 0.12,    // near-mirror finish
-    metalness: 1.0,     // fully metallic — reflections come from scene.environment
+    color: 0xd6d8dc,
+    roughness: 0.12,
+    metalness: 1.0,
+    envMap: cubeRenderTarget.texture,
   });
 
   // Floor tiles
@@ -342,7 +341,17 @@ async function main() {
   }
 
   for (const { x, z } of level.walls) {
-    const mat = wallMaterials[(Math.random() * wallMaterials.length) | 0];
+    // Each wall gets its own texture clone + random 90° rotation so no
+    // two walls share the same orientation by construction.
+    const tex = stoneTexturePool[(Math.random() * stoneTexturePool.length) | 0].clone();
+    tex.needsUpdate = true;
+    tex.center.set(0.5, 0.5);
+    tex.rotation = ((Math.random() * 4) | 0) * (Math.PI / 2);
+    const mat = new THREE.MeshStandardMaterial({
+      map: tex,
+      roughness: 0.95,
+      metalness: 0,
+    });
     const mesh = new THREE.Mesh(wallGeom, mat);
     mesh.position.set(x, WALL_HEIGHT / 2, z);
     mesh.castShadow = true;
@@ -377,13 +386,44 @@ async function main() {
     boardBody
   );
 
-  // Goal pad + sensor
-  const goalMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(CELL * 0.85, 0.06, CELL * 0.85),
-    matGoal
+  // Goal portal: emerald disc on the floor + four translucent rings that
+  // continually rise and fade — gives a "teleport pad" feel. Visual only;
+  // the sensor collider below is unchanged.
+  const portalGroup = new THREE.Group();
+  portalGroup.position.set(level.goal.x, 0.015, level.goal.z);
+
+  const portalBase = new THREE.Mesh(
+    new THREE.CircleGeometry(0.42, 32),
+    new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x10b981,
+      emissiveIntensity: 1.4,
+      side: THREE.DoubleSide,
+      roughness: 0.3,
+    })
   );
-  goalMesh.position.set(level.goal.x, 0.04, level.goal.z);
-  boardGroup.add(goalMesh);
+  portalBase.rotation.x = -Math.PI / 2;
+  portalGroup.add(portalBase);
+
+  const RING_COUNT = 4;
+  const RING_RISE = 0.55;        // how high the rings climb before resetting
+  const RING_CYCLE_SEC = 1.8;    // full rise-and-fade period
+  const portalRings = [];
+  const ringGeom = new THREE.TorusGeometry(0.38, 0.025, 8, 32);
+  for (let i = 0; i < RING_COUNT; i++) {
+    const ring = new THREE.Mesh(
+      ringGeom,
+      new THREE.MeshBasicMaterial({
+        color: 0x10b981,
+        transparent: true,
+        opacity: 0.85,
+      })
+    );
+    ring.rotation.x = Math.PI / 2;
+    portalGroup.add(ring);
+    portalRings.push(ring);
+  }
+  boardGroup.add(portalGroup);
 
   const goalCollider = world.createCollider(
     RAPIER.ColliderDesc
@@ -571,6 +611,7 @@ async function main() {
   // --- Loop -----------------------------------------------------------------
   const boardQuat = new THREE.Quaternion();
   const boardEuler = new THREE.Euler(0, 0, 0, 'XYZ');
+  const clock = new THREE.Clock();
 
   function frame() {
     const tilt = input.getTilt();
@@ -595,6 +636,17 @@ async function main() {
     ballMesh.position.set(t.x, t.y, t.z);
     ballMesh.quaternion.set(r.x, r.y, r.z, r.w);
 
+    // Animate portal rings: each ring rises over RING_CYCLE_SEC, fades as
+    // it climbs, then resets. Offsetting phase per ring gives a continuous
+    // teleport-stack look.
+    const elapsed = clock.getElapsedTime();
+    for (let i = 0; i < portalRings.length; i++) {
+      const phase = ((elapsed / RING_CYCLE_SEC) + i / portalRings.length) % 1;
+      const ring = portalRings[i];
+      ring.position.y = phase * RING_RISE;
+      ring.material.opacity = 0.85 * (1 - phase);
+    }
+
     if (gameState === 'playing') {
       if (t.y < FALL_THRESHOLD) {
         gameState = 'lose';
@@ -614,6 +666,14 @@ async function main() {
         });
       }
     }
+
+    // Refresh the ball's environment cube map BEFORE the main render so
+    // its reflections include the current frame's scene state. Hide the
+    // ball itself so it doesn't reflect a copy of itself.
+    ballMesh.visible = false;
+    cubeCamera.position.copy(ballMesh.position);
+    cubeCamera.update(renderer, scene);
+    ballMesh.visible = true;
 
     renderer.render(scene, camera);
   }

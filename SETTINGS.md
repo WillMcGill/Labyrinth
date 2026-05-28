@@ -119,16 +119,23 @@ All textures are procedural — drawn into HTML canvases inside `makeWoodTexture
 | Material | `MeshStandardMaterial` | |
 | Color | `0xd6d8dc` | Light neutral steel. |
 | Roughness | `0.12` | Near-mirror. Drives how blurred the env-map reflections appear. |
-| Metalness | `1.0` | Fully metallic. The reflections come from `scene.environment` — without it, a fully metallic ball renders dark. |
+| Metalness | `1.0` | Fully metallic. |
+| Env map | `cubeRenderTarget.texture` (CubeCamera updated each frame at ball position) | Ball reflects the *actual* scene (walls/floor) each frame, not the static `scene.environment` studio map. Overriding `envMap` per-material wins over the scene env. |
+| Cube target size | `256 × 256` per face (×6 faces) | Resolution of the reflection cube map. 128 is the cheap option; 512 looks crisper but doubles GPU cost. |
+| Cube update cadence | every frame | If perf becomes an issue, update every Nth frame — ball reflections will only update at N× the rate but on a small marble that's hard to notice. |
 | Geometry | `SphereGeometry(BALL_RADIUS, 32, 24)` | 32 width segments × 24 height segments. Lower = polygonal-looking sphere; higher = smoother but more vertices. |
 
-### Goal pad
+### Goal portal
 | Setting | Value | Notes |
 |---|---|---|
-| Material | `MeshStandardMaterial` | |
-| Color | `0x10b981` | Emerald green. |
-| Emissive | `0x0c5a44`, intensity `0.6` | Self-glow so the pad still reads as "active" in shadow. |
-| Roughness | `0.35` | Slightly glossy. |
+| Base mesh | `CircleGeometry(0.42, 32)` flat on the floor, rotated `-π/2` around X | Emerald disc that anchors the portal. |
+| Base material | `MeshStandardMaterial`, color/emissive `0x10b981`, emissive intensity `1.4`, roughness `0.3`, `DoubleSide` | Strong self-glow so it reads through shadow. |
+| Ring count (`RING_COUNT`) | `4` | More rings = denser teleport stack; ~1 GB ring per RING_COUNT shouldn't matter for perf. |
+| Ring geometry | `TorusGeometry(0.38, 0.025, 8, 32)` | Outer radius 0.38, tube 0.025. Increase tube for chunkier rings. |
+| Ring material | `MeshBasicMaterial`, color `0x10b981`, transparent, opacity `0.85` at start (fades) | `Basic` so rings ignore lighting and stay vivid. |
+| Rise distance (`RING_RISE`) | `0.55` | Max Y the ring climbs before resetting. Stays under the ceiling collider (~0.756). |
+| Cycle period (`RING_CYCLE_SEC`) | `1.8` seconds | How long a single ring takes to rise + fade. Lower = more frenetic, higher = more relaxed. |
+| Phase offset | Even spacing: `i / RING_COUNT` | Keeps rings continuously stacked instead of all at once. |
 
 ### Hole visual
 | Setting | Value | Notes |
