@@ -3,7 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { parseLevel, CELL } from './maze.js';
 import { createInput } from './controls.js';
 
-const MAX_TILT = Math.PI / 12;        // 15° max board tilt
+const MAX_TILT = Math.PI / 9;         // 20° max board tilt
 const BALL_RADIUS = 0.28;
 const WALL_HEIGHT = 0.7;
 const FLOOR_THICKNESS = 0.2;
@@ -50,9 +50,8 @@ async function main() {
   scene.add(dir);
 
   // --- Physics --------------------------------------------------------------
-  // Stronger-than-Earth gravity for snappier roll response — rolling
-  // acceleration is g·sin(tilt) so this is the main lever for "faster".
-  const world = new RAPIER.World(new RAPIER.Vector3(0, -15.0, 0));
+  // Earth-standard gravity, paired with steel-marble ball parameters below.
+  const world = new RAPIER.World(new RAPIER.Vector3(0, -9.81, 0));
 
   const boardBody = world.createRigidBody(
     RAPIER.RigidBodyDesc.kinematicPositionBased()
@@ -165,19 +164,23 @@ async function main() {
   ballMesh.castShadow = true;
   scene.add(ballMesh);
 
+  // Steel-marble parameters: high density relative to surroundings, moderate
+  // friction (steel on most surfaces), moderate restitution (real steel
+  // marbles bounce noticeably), and very low damping because a heavy ball
+  // has negligible air drag.
   const ballBody = world.createRigidBody(
     RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(level.start.x, BALL_RADIUS, level.start.z)
-      .setLinearDamping(0.15)   // lower drag so the ball keeps speed longer
-      .setAngularDamping(0.35)
+      .setLinearDamping(0.05)
+      .setAngularDamping(0.1)
       .setCcdEnabled(true)
   );
   const ballCollider = world.createCollider(
     RAPIER.ColliderDesc
       .ball(BALL_RADIUS)
-      .setFriction(0.6)
-      .setRestitution(0.1)
-      .setDensity(4.0),          // heavier ball — more momentum on collisions
+      .setFriction(0.4)
+      .setRestitution(0.3)
+      .setDensity(7.85),         // steel: 7,850 kg/m³ relative to water 1,000
     ballBody
   );
 
