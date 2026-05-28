@@ -27,9 +27,11 @@ async function main() {
   scene.background = new THREE.Color(0x0b0d12);
   scene.fog = new THREE.Fog(0x0b0d12, 22, 42);
 
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-  camera.position.set(0, 17, 13);
-  camera.lookAt(0, 0, 0);
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+  // Direction the camera looks at the origin from; distance is sized by aspect.
+  const cameraDir = new THREE.Vector3(0, 17, 13).normalize();
+  // Half-diagonal of the board's bounding rect (plus margin) we want in view.
+  const BOARD_HALF_EXTENT = 7.5;
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.45);
   scene.add(ambient);
@@ -245,14 +247,31 @@ async function main() {
 
   // --- Resize ---------------------------------------------------------------
   function resize() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (w === 0 || h === 0) return;
+    const aspect = w / h;
     renderer.setSize(w, h, false);
-    camera.aspect = w / h;
+    camera.aspect = aspect;
+    // Distance needed so BOARD_HALF_EXTENT fits in the narrower axis.
+    const vFov = THREE.MathUtils.degToRad(camera.fov);
+    const distForHeight = BOARD_HALF_EXTENT / Math.tan(vFov / 2);
+    const distForWidth = BOARD_HALF_EXTENT / (Math.tan(vFov / 2) * aspect);
+    const dist = Math.max(distForHeight, distForWidth);
+    camera.position.copy(cameraDir).multiplyScalar(dist);
+    camera.lookAt(0, 0, 0);
     camera.updateProjectionMatrix();
+    // Keep fog tuned to camera distance so the board never disappears into it.
+    scene.fog.near = dist * 0.7;
+    scene.fog.far = dist * 1.6;
   }
   resize();
   window.addEventListener('resize', resize);
+  // HUD height can change when status text rewraps — re-fit the canvas.
+  const hud = document.getElementById('hud');
+  if (typeof ResizeObserver !== 'undefined' && hud) {
+    new ResizeObserver(resize).observe(hud);
+  }
 
   // --- Loop -----------------------------------------------------------------
   const boardQuat = new THREE.Quaternion();

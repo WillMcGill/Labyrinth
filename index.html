@@ -2,25 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Labyrinth</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <canvas id="game"></canvas>
     <div id="hud">
       <div id="status">Tilt the board · reach the green pad</div>
       <div id="controls">
-        <label>Input:
-          <select id="input-mode">
-            <option value="mouse">Mouse</option>
-            <option value="keys">Keyboard (WASD / Arrows)</option>
-            <option value="tilt">Device tilt</option>
-          </select>
-        </label>
+        <label for="input-mode">Input:</label>
+        <select id="input-mode">
+          <option value="mouse">Mouse</option>
+          <option value="keys">Keyboard (WASD / Arrows)</option>
+          <option value="tilt">Device tilt</option>
+        </select>
         <button id="reset">Reset</button>
       </div>
     </div>
+    <canvas id="game"></canvas>
     <div id="banner" hidden></div>
     <div id="motion-overlay" hidden>
       <div class="motion-card">
