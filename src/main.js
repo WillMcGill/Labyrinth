@@ -175,11 +175,13 @@ async function main() {
     // requestPermission() must be called directly inside the click handler
     // for iOS to count the activation. No awaits before this call.
     input.requestGyroPermission().then((result) => {
+      motionOverlay.hidden = true;
       if (!result.ok) {
-        motionErrorEl.textContent = result.reason;
+        statusEl.textContent = result.reason + ' · falling back to mouse';
+        modeSelect.value = 'mouse';
+        input.setMode('mouse');
         return;
       }
-      motionOverlay.hidden = true;
       input.setMode('tilt');
       statusEl.textContent = hintFor('tilt');
     });
