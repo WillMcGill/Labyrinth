@@ -101,10 +101,11 @@ body {
 #banner.win { color: #6ee7b7; }
 #banner.lose { color: #fca5a5; }
 
-#motion-overlay {
+#motion-overlay,
+#start-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -112,7 +113,79 @@ body {
   padding: 20px;
 }
 
-#motion-overlay[hidden] { display: none; }
+#motion-overlay[hidden],
+#start-overlay[hidden] { display: none; }
+
+.start-card {
+  background: #1d222d;
+  border: 1px solid #2c3342;
+  border-radius: 12px;
+  padding: 28px 24px;
+  max-width: 360px;
+  text-align: center;
+}
+
+.start-card h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  letter-spacing: 0.02em;
+}
+
+.start-card p {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: #b8bfd0;
+}
+
+.start-inputs {
+  border: 1px solid #2c3342;
+  border-radius: 8px;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.start-inputs legend {
+  padding: 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.start-inputs label {
+  display: block;
+  padding: 6px 0;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.start-inputs input[type="radio"] {
+  margin-right: 8px;
+}
+
+#start-button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  font: inherit;
+  font-size: 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#start-button:active { background: #1d4ed8; }
+
+#start-error {
+  margin-top: 12px;
+  margin-bottom: 0;
+  color: #fca5a5;
+  font-size: 13px;
+  min-height: 1em;
+}
 
 .motion-card {
   background: #1d222d;

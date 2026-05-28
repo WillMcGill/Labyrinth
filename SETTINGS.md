@@ -118,6 +118,7 @@ All textures are procedural — drawn into HTML canvases inside `makeWoodTexture
 |---|---|---|
 | Material | `MeshStandardMaterial` | |
 | Color | `0xd6d8dc` | Light neutral steel. |
+| Emissive | `0xe6efff`, intensity `0.18` | Subtle cool-white self-glow so the ball is locatable against the dark stone walls. Works even at metalness 1.0. |
 | Roughness | `0.12` | Near-mirror. Drives how blurred the env-map reflections appear. |
 | Metalness | `1.0` | Fully metallic. |
 | Env map | `cubeRenderTarget.texture` (CubeCamera updated each frame at ball position) | Ball reflects the *actual* scene (walls/floor) each frame, not the static `scene.environment` studio map. Overriding `envMap` per-material wins over the scene env. |

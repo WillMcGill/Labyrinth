@@ -286,6 +286,8 @@ async function main() {
 
   const matBall = new THREE.MeshStandardMaterial({
     color: 0xd6d8dc,
+    emissive: 0xe6efff,           // subtle cool-white self-glow so the ball
+    emissiveIntensity: 0.18,      // is locatable on the dark stone walls
     roughness: 0.12,
     metalness: 1.0,
     envMap: cubeRenderTarget.texture,
@@ -474,7 +476,8 @@ async function main() {
   const motionErrorEl = document.getElementById('motion-error');
   const recenterBtn = document.getElementById('recenter');
 
-  let paused = false;
+  // Start paused so nothing rolls before the user dismisses the start modal.
+  let paused = true;
   function pauseForCalibration() {
     paused = true;
     ballBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
@@ -556,6 +559,56 @@ async function main() {
       return;
     }
     setActiveMode(mode);
+  });
+
+  // Start modal — gates game play until the user picks a control mode and
+  // taps Start. For iOS tilt, the Start tap is the user-gesture that lets
+  // requestPermission() actually show its prompt.
+  const startOverlay = document.getElementById('start-overlay');
+  const startButton = document.getElementById('start-button');
+  const startError = document.getElementById('start-error');
+  const startRadios = document.querySelectorAll('input[name="start-input"]');
+
+  // Default to tilt on touch-only devices so it's pre-selected for the
+  // most likely intent.
+  if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+    for (const r of startRadios) {
+      if (r.value === 'tilt') r.checked = true;
+      else r.checked = false;
+    }
+  }
+
+  function dismissStartAndPlay(mode) {
+    startOverlay.hidden = true;
+    modeSelect.value = mode;
+    setActiveMode(mode);
+    if (mode === 'tilt') {
+      calibrateAndPlay();
+    } else {
+      resumeAfterCalibration();
+    }
+  }
+
+  startButton.addEventListener('click', () => {
+    startError.textContent = '';
+    let mode = 'mouse';
+    for (const r of startRadios) if (r.checked) mode = r.value;
+
+    if (mode !== 'tilt') {
+      dismissStartAndPlay(mode);
+      return;
+    }
+
+    // Tilt selected. Call requestPermission directly inside this click
+    // handler so iOS counts it as a real gesture. On grant, dismiss and
+    // start; on denial, surface the reason and let the user pick again.
+    input.requestGyroPermission().then((result) => {
+      if (!result.ok) {
+        startError.textContent = result.reason;
+        return;
+      }
+      dismissStartAndPlay('tilt');
+    });
   });
 
   function hintFor(mode) {

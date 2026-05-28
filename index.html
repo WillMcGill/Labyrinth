@@ -22,6 +22,20 @@
     </div>
     <canvas id="game"></canvas>
     <div id="banner" hidden></div>
+    <div id="start-overlay">
+      <div class="start-card">
+        <h1>Labyrinth</h1>
+        <p>Tilt the board to roll the ball through the maze to the green portal.</p>
+        <fieldset class="start-inputs">
+          <legend>Controls</legend>
+          <label><input type="radio" name="start-input" value="mouse" checked> Mouse</label>
+          <label><input type="radio" name="start-input" value="keys"> Keyboard</label>
+          <label><input type="radio" name="start-input" value="tilt"> Device tilt</label>
+        </fieldset>
+        <button id="start-button">Start</button>
+        <p id="start-error"></p>
+      </div>
+    </div>
     <div id="motion-overlay" hidden>
       <div class="motion-card">
         <h2>Enable motion controls</h2>
